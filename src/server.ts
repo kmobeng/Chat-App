@@ -7,29 +7,22 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents,
 } from "./socket/types";
-import { prisma } from "./config/db";
 import logger from "./config/winston.config";
 
 dotenv.config();
 
-const PORT = Number(process.env.PORT) ;
+const PORT = Number(process.env.PORT);
 
 const startServer = async () => {
-  await prisma.$connect();
-
-  const httpServer = http.createServer(app);
-  const io = new Server<ClientToServerEvents, ServerToClientEvents>(
-    httpServer,
-    {
-      cors: { origin: "*" },
-    },
-  );
-
-  io.on("connection", (socket) => handler(io, socket));
-
-  httpServer.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info(`Server is running on port ${PORT}`);
   });
+
+  const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
+    cors: { origin: "*" },
+  });
+
+  io.on("connection", (socket) => handler(io, socket));
 };
 
 startServer();

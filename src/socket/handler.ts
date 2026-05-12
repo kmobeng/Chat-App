@@ -7,7 +7,7 @@ import {
   getActiveUsernames,
   removeUser,
 } from "./roomManager";
-import type { ClientToServerEvents, ServerToClientEvents } from "./types";
+import type { ClientToServerEvents, SendMessagePayload, SendReactionPayload, ServerToClientEvents } from "./types";
 import { prisma } from "../config/db";
 
 const connectionSchema = z.object({
@@ -79,11 +79,7 @@ export const handler = async (io: TypedServer, socket: TypedSocket) => {
   socket.on(
     "send_message",
     async (
-      payload: ClientToServerEvents["send_message"] extends (
-        arg: infer T,
-      ) => void
-        ? T
-        : never,
+      payload:SendMessagePayload
     ) => {
       const parsedPayload = sendMessageSchema.safeParse(payload);
       if (!parsedPayload.success) {
@@ -110,11 +106,7 @@ export const handler = async (io: TypedServer, socket: TypedSocket) => {
   socket.on(
     "send_reaction",
     (
-      payload: ClientToServerEvents["send_reaction"] extends (
-        arg: infer T,
-      ) => void
-        ? T
-        : never,
+      payload: SendReactionPayload
     ) => {
       const parsedPayload = sendReactionSchema.safeParse(payload);
       if (!parsedPayload.success) {
