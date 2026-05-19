@@ -1,5 +1,4 @@
 import type { Server, Socket } from "socket.io";
-import { z } from "zod";
 import { getRoomMessages } from "../services/message.service";
 import {
   addUser,
@@ -7,21 +6,18 @@ import {
   getActiveUsernames,
   removeUser,
 } from "./roomManager";
-import type { ClientToServerEvents, SendMessagePayload, SendReactionPayload, ServerToClientEvents } from "./types";
+import type {
+  ClientToServerEvents,
+  SendMessagePayload,
+  SendReactionPayload,
+  ServerToClientEvents,
+} from "./types";
 import { prisma } from "../config/db";
-
-const connectionSchema = z.object({
-  roomId: z.string().min(1),
-  username: z.string().min(1),
-});
-
-const sendMessageSchema = z.object({
-  content: z.string().min(1),
-});
-
-const sendReactionSchema = z.object({
-  emoji: z.string().min(1),
-});
+import {
+  connectionSchema,
+  sendMessageSchema,
+  sendReactionSchema,
+} from "../utils/validator.util";
 
 const normalizeQueryValue = (value: string | string[] | undefined) => {
   if (Array.isArray(value)) {
@@ -76,50 +72,40 @@ export const handler = async (io: TypedServer, socket: TypedSocket) => {
     activeUsers: getActiveUsernames(roomId),
   });
 
-  socket.on(
-    "send_message",
-    async (
-      payload:SendMessagePayload
-    ) => {
-      const parsedPayload = sendMessageSchema.safeParse(payload);
-      if (!parsedPayload.success) {
-        socket.emit("error", { message: "Invalid message payload" });
-        return;
-      }
+  socket.on("send_message", async (payload: SendMessagePayload) => {
+    const parsedPayload = sendMessageSchema.safeParse(payload);
+    if (!parsedPayload.success) {
+      socket.emit("error", { message: "Invalid message payload" });
+      return;
+    }
 
-      const message = await prisma.message.create({
-        data: {
-          content: parsedPayload.data.content,
-          username,
-          roomId,
-        },
-      });
+    const message = await prisma.message.create({
+      data: {
+        content: parsedPayload.data.content,
+        username,
+        roomId,
+      },
+    });
 
-      io.to(roomId).emit("new_message", {
-        from: message.username,
-        content: message.content,
-        timestamp: message.createdAt.toISOString(),
-      });
-    },
-  );
+    io.to(roomId).emit("new_message", {
+      from: message.username,
+      content: message.content,
+      timestamp: message.createdAt.toISOString(),
+    });
+  });
 
-  socket.on(
-    "send_reaction",
-    (
-      payload: SendReactionPayload
-    ) => {
-      const parsedPayload = sendReactionSchema.safeParse(payload);
-      if (!parsedPayload.success) {
-        socket.emit("error", { message: "Invalid reaction payload" });
-        return;
-      }
+  socket.on("send_reaction", (payload: SendReactionPayload) => {
+    const parsedPayload = sendReactionSchema.safeParse(payload);
+    if (!parsedPayload.success) {
+      socket.emit("error", { message: "Invalid reaction payload" });
+      return;
+    }
 
-      io.to(roomId).emit("new_reaction", {
-        from: username,
-        emoji: parsedPayload.data.emoji,
-      });
-    },
-  );
+    io.to(roomId).emit("new_reaction", {
+      from: username,
+      emoji: parsedPayload.data.emoji,
+    });
+  });
 
   socket.on("disconnect", () => {
     const removedUsername = removeUser(roomId, socket.id);

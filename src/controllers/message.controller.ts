@@ -9,14 +9,14 @@ export const getMessagesByRoom = async (
 ) => {
   try {
     const { id } = req.params;
-     if (!id) {
-        throw createError("Room ID is required", 400);
-     }
-   
+    if (!id) {
+      throw createError("Room ID is required", 400);
+    }
+
     const messages = await getRoomMessages(id.toString());
 
-    return res.status(200).json(messages);
+    res.status(200).json(messages);
   } catch (error) {
-    return next(error);
+    next(error);
   }
 };

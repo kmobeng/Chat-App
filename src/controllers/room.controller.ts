@@ -1,30 +1,31 @@
 import type { Request, Response, NextFunction } from "express";
 import { prisma } from "../config/db";
 import { createError } from "../utils/createError.util";
+import { createRoomSchema } from "../utils/validator.util";
 
 export const createRoom = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> => {
   try {
-    const { name } = req.body as { name: string };
-
-    const existingRoom = await prisma.room.findUnique({
-      where: { name },
-    });
-
-    if (existingRoom) {
-      return res.status(409).json({ error: "Room name already exists" });
+    const parsed = createRoomSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessage = parsed.error.issues
+        .map((err) => err.message)
+        .join(", ");
+      throw createError(errorMessage, 400);
     }
+
+    const { name } = parsed.data;
 
     const room = await prisma.room.create({
       data: { name },
     });
 
-    return res.status(201).json(room);
+    res.status(201).json(room);
   } catch (error) {
-    return next(error);
+    next(error);
   }
 };
 
@@ -38,9 +39,9 @@ export const getRooms = async (
       orderBy: { createdAt: "desc" },
     });
 
-    return res.status(200).json(rooms);
+    res.status(200).json(rooms);
   } catch (error) {
-    return next(error);
+    next(error);
   }
 };
 
@@ -52,7 +53,7 @@ export const getRoomById = async (
   try {
     const { id } = req.params;
     if (!id) {
-        throw createError("Room ID is required", 400);
+      throw createError("Room ID is required", 400);
     }
 
     const room = await prisma.room.findUnique({
@@ -60,11 +61,11 @@ export const getRoomById = async (
     });
 
     if (!room) {
-      return res.status(404).json({ error: "Room not found" });
+      throw createError("Room not found", 404);
     }
 
-    return res.status(200).json(room);
+    res.status(200).json(room);
   } catch (error) {
-    return next(error);
+    next(error);
   }
 };

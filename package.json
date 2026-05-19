@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "dev": "",
+    "dev": "nodemon src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },
@@ -21,7 +21,7 @@
     "socket.io": "^4.8.3",
     "ts-node": "^10.9.2",
     "winston": "^3.19.0",
-    "zod": "^4.1.11"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

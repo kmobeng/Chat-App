@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { z } from "zod";
 import {
   createRoom,
   getRoomById,
@@ -8,10 +7,6 @@ import {
 import { getMessagesByRoom } from "../controllers/message.controller";
 
 const router = Router();
-
-const createRoomSchema = z.object({
-  name: z.string().min(1),
-});
 
 router.post("/rooms", createRoom);
 router.get("/rooms", getRooms);
